@@ -1,19 +1,23 @@
 package org.eric.httpServer;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class HttpServer {
     private int port = 8080;
+
     private ServerSocket socket;
 
-    private HttpServer() {}
+    private Map<String, Route> routes = new HashMap<>();
+
+    private HttpServer() {
+
+    }
 
     public static HttpServer create() {
         return new HttpServer();
@@ -45,6 +49,11 @@ public class HttpServer {
         }
     }
 
+    public HttpServer get(String path, Route route) {
+        routes.put("GET:" + path, route);
+        return this;
+    }
+
     class HttpRequestHandler implements Runnable {
 
         private Socket socket;
@@ -56,23 +65,21 @@ public class HttpServer {
         @Override
         public void run() {
             try {
-                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                HttpRequest request = new HttpRequest(socket);
+                HttpResponse response = new HttpResponse(socket);
 
-                String line = in.readLine();
-                while (!line.isEmpty()) {
-                    System.out.println(line);
-                    line = in.readLine();
+                String routeKey = String.format("%s:%s", request.getMethod(), request.getUri().getPath());
+                Route route = routes.getOrDefault(routeKey, (req, res) -> {
+                    res.notFound()
+                            .SetContentType("text/plain; charset=utf-8")
+                            .withBody(String.format("Can not found the path: %s", req.getUri().getPath()))
+                            .flush();
+                });
+
+                if (route != null) {
+                    route.handle(request, response);
                 }
 
-                out.println("HTTP/1.1 200 OK");
-                out.println("Server: JAVA");
-                out.println("Content-Type: text/html");
-                out.println("");
-                out.println("<h1>Hello World</h1>");
-
-                out.close();
-                in.close();
                 socket.close();
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -83,5 +90,12 @@ public class HttpServer {
     public static void main(String[] args) {
         HttpServer server = HttpServer.create();
         server.start();
+
+        server.get("/hello", (request, response) -> {
+            response.ok()
+                    .SetContentType("application/json; charset=utf-8")
+                    .withBody("{\"abc\": 123}")
+                    .flush();
+        });
     }
 }
