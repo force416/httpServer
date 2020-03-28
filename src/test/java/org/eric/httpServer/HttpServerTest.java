@@ -32,6 +32,7 @@ public class HttpServerTest {
                     .withBody("{\"status\": \"success\"}")
                     .flush();
         });
+
         server.start();
     }
 

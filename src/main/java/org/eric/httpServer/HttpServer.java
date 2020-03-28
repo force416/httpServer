@@ -31,8 +31,17 @@ public class HttpServer {
         this.start(this.port);
     }
 
-    public void start(int port) {
+    public synchronized void start(int port) {
         this.port = port;
+
+        try {
+            if (socket == null) {
+                socket = new ServerSocket(this.port);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
         if (serverThread == null) {
             serverThread = new Thread(() -> init());
             serverThread.start();
@@ -45,7 +54,6 @@ public class HttpServer {
             if (socket != null) {
                 this.socket.close();
             }
-            serverThread.stop();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -53,9 +61,6 @@ public class HttpServer {
 
     private void init() {
         try {
-            if (socket == null) {
-                socket = new ServerSocket(this.port);
-            }
             ExecutorService fixedThreadPool = Executors.newFixedThreadPool(30);
             while (!isStop) {
                 Socket clientSocket = socket.accept();
