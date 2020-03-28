@@ -11,6 +11,10 @@ import java.util.concurrent.Executors;
 public class HttpServer {
     private int port = 8080;
 
+    private boolean isStop = false;
+
+    private Thread serverThread;
+
     private ServerSocket socket;
 
     private Map<String, Route> routes = new HashMap<>();
@@ -29,7 +33,22 @@ public class HttpServer {
 
     public void start(int port) {
         this.port = port;
-        init();
+        if (serverThread == null) {
+            serverThread = new Thread(() -> init());
+            serverThread.start();
+        }
+    }
+
+    public void stop() {
+        try {
+            this.isStop = true;
+            if (socket != null) {
+                this.socket.close();
+            }
+            serverThread.stop();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void init() {
@@ -38,12 +57,12 @@ public class HttpServer {
                 socket = new ServerSocket(this.port);
             }
             ExecutorService fixedThreadPool = Executors.newFixedThreadPool(30);
-            while (true) {
+            while (!isStop) {
                 Socket clientSocket = socket.accept();
                 HttpRequestHandler request = new HttpRequestHandler(clientSocket);
                 fixedThreadPool.execute(request);
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -89,11 +108,9 @@ public class HttpServer {
 
                 String routeKey = String.format("%s:%s", request.getMethod(), request.getUri().getPath());
                 Route route = routes.getOrDefault(routeKey, getDefaultRoute());
-
                 route.handle(request, response);
-
                 socket.close();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
@@ -103,24 +120,5 @@ public class HttpServer {
                     .SetContentType("text/plain; charset=utf-8")
                     .withBody(String.format("Can not found the path: %s", req.getUri().getPath())).flush();
         }
-    }
-
-    public static void main(String[] args) {
-        HttpServer server = HttpServer.create();
-
-        server.get("/hello", (request, response) -> {
-            response.ok()
-                    .SetContentType("application/json; charset=utf-8")
-                    .withBody("{\"abc\": 123}")
-                    .flush();
-        })
-        .post("/game", (request, response) -> {
-            response.ok()
-                    .SetContentType("application/json; charset=utf-8")
-                    .withBody("{\"status\": \"success\"}")
-                    .flush();
-        });
-
-        server.start();
     }
 }
