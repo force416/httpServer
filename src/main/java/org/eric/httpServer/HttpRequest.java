@@ -3,6 +3,7 @@ package org.eric.httpServer;
 import rawhttp.core.RawHttp;
 import rawhttp.core.RawHttpRequest;
 import rawhttp.core.body.BodyReader;
+import rawhttp.core.errors.InvalidHttpRequest;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -14,7 +15,11 @@ public class HttpRequest {
     private RawHttpRequest rawHttpRequest;
 
     public HttpRequest(Socket socket) throws IOException {
-        this.rawHttpRequest = new RawHttp().parseRequest(socket.getInputStream());
+        try {
+            this.rawHttpRequest = new RawHttp().parseRequest(socket.getInputStream());
+        } catch (InvalidHttpRequest e) {
+            // nothing
+        }
     }
 
     public String getMethod() {

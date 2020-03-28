@@ -23,14 +23,13 @@ public class HttpServer {
         return new HttpServer();
     }
 
-    public HttpServer start() {
-        return this.start(this.port);
+    public void start() {
+        this.start(this.port);
     }
 
-    public HttpServer start(int port) {
+    public void start(int port) {
         this.port = port;
-        new Thread(() -> init()).start();
-        return this;
+        init();
     }
 
     private void init() {
@@ -54,6 +53,26 @@ public class HttpServer {
         return this;
     }
 
+    public HttpServer post(String path, Route route) {
+        routes.put("POST:" + path, route);
+        return this;
+    }
+
+    public HttpServer put(String path, Route route) {
+        routes.put("PUT:" + path, route);
+        return this;
+    }
+
+    public HttpServer delete(String path, Route route) {
+        routes.put("DELETE:" + path, route);
+        return this;
+    }
+
+    public HttpServer patch(String path, Route route) {
+        routes.put("PATCH:" + path, route);
+        return this;
+    }
+
     class HttpRequestHandler implements Runnable {
 
         private Socket socket;
@@ -69,33 +88,39 @@ public class HttpServer {
                 HttpResponse response = new HttpResponse(socket);
 
                 String routeKey = String.format("%s:%s", request.getMethod(), request.getUri().getPath());
-                Route route = routes.getOrDefault(routeKey, (req, res) -> {
-                    res.notFound()
-                            .SetContentType("text/plain; charset=utf-8")
-                            .withBody(String.format("Can not found the path: %s", req.getUri().getPath()))
-                            .flush();
-                });
+                Route route = routes.getOrDefault(routeKey, getDefaultRoute());
 
-                if (route != null) {
-                    route.handle(request, response);
-                }
+                route.handle(request, response);
 
                 socket.close();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
+
+        private Route getDefaultRoute() {
+            return (req, res) -> res.notFound()
+                    .SetContentType("text/plain; charset=utf-8")
+                    .withBody(String.format("Can not found the path: %s", req.getUri().getPath())).flush();
+        }
     }
 
     public static void main(String[] args) {
         HttpServer server = HttpServer.create();
-        server.start();
 
         server.get("/hello", (request, response) -> {
             response.ok()
                     .SetContentType("application/json; charset=utf-8")
                     .withBody("{\"abc\": 123}")
                     .flush();
+        })
+        .post("/game", (request, response) -> {
+            response.ok()
+                    .SetContentType("application/json; charset=utf-8")
+                    .withBody("{\"status\": \"success\"}")
+                    .flush();
         });
+
+        server.start();
     }
 }
