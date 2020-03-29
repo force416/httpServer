@@ -1,7 +1,6 @@
 package org.eric.httpServer;
 
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -10,6 +9,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class HttpServerTest {
 
@@ -42,12 +44,9 @@ public class HttpServerTest {
     }
 
     @Test
-    public void testStartServer() {
+    public void testGETMethod() {
         try {
-            HttpClient client = HttpClient.newBuilder()
-                    .connectTimeout(Duration.ofMillis(5000))
-                    .followRedirects(HttpClient.Redirect.NORMAL)
-                    .build();
+            HttpClient client = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create("http://localhost:8080/hello"))
@@ -57,10 +56,28 @@ public class HttpServerTest {
             HttpResponse<String> response =
                     client.send(request, HttpResponse.BodyHandlers.ofString());
 
-            Assert.assertEquals("{\"abc\": 123}", response.body());
+            assertEquals("{\"abc\": 123}", response.body());
 
         } catch (Exception e) {
-            Assert.fail();
+            fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void testPOSTMethod() {
+        try {
+            HttpClient client = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .POST(HttpRequest.BodyPublishers.noBody())
+                    .uri(URI.create("http://localhost:8080/game"))
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            assertEquals("{\"status\": \"success\"}", response.body());
+
+        } catch (Exception e) {
+            fail(e.getMessage());
         }
     }
 }

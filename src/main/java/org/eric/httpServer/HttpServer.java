@@ -51,9 +51,7 @@ public class HttpServer {
     public void stop() {
         try {
             this.isStop = true;
-            if (socket != null) {
-                this.socket.close();
-            }
+            this.socket.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
