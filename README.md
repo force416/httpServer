@@ -1,7 +1,7 @@
 # httpServer
 Java socket http server 
 
-## how to use
+## code
 
 ```JAVA
     public static void main(String[] args) {
@@ -23,4 +23,26 @@ Java socket http server
 
         server.start();
     }
+```
+
+## Maven ~/.m2/settings.xml
+
+```
+</repositories>
+    <repository>
+        <id>github</id>
+        <name>GitHub OWNER Apache Maven Packages</name>
+        <url>https://maven.pkg.github.com/force416/mvn-repo</url>
+    </repository>
+</repositories>
+```
+
+## Maven pom.xml
+
+```
+<dependency>
+  <groupId>org.eric</groupId>
+  <artifactId>httpServer</artifactId>
+  <version>1.0.7</version>
+</dependency>
 ```
