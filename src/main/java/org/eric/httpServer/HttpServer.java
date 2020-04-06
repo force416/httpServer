@@ -59,7 +59,7 @@ public class HttpServer {
 
     private void init() {
         try {
-            ExecutorService fixedThreadPool = Executors.newFixedThreadPool(30);
+            ExecutorService fixedThreadPool = Executors.newFixedThreadPool(2);
             while (!isStop) {
                 Socket clientSocket = socket.accept();
                 HttpRequestHandler request = new HttpRequestHandler(clientSocket);
@@ -123,5 +123,25 @@ public class HttpServer {
                     .SetContentType("text/plain; charset=utf-8")
                     .withBody(String.format("Can not found the path: %s", req.getUri().getPath())).flush();
         }
+    }
+
+    public static void main(String[] args) {
+        HttpServer server = HttpServer.create();
+
+        server.get("/hello", (request, response) -> {
+            response.ok()
+                    .SetContentType("application/json; charset=utf-8")
+                    .withBody("{\"abc\": 123}")
+                    .flush();
+        });
+
+        server.post("/game", (request, response) -> {
+            response.ok()
+                    .SetContentType("application/json; charset=utf-8")
+                    .withBody("{\"status\": \"success\"}")
+                    .flush();
+        });
+
+        server.start(8081);
     }
 }
